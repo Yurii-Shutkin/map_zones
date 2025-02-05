@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Карта Одессы с районами</title>
+    <style>
+        body {
+            text-align: center;
+        }
+
+        #map-container {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        img {
+            min-height: 100%;
+            width: 100%;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            color: #fff;
+        }
+
+        button {
+            margin: 10px;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        textarea {
+            margin: 10px;
+            padding: 5px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- <h2>Карта Одессы с районами</h2> -->
+    <button id="add-zone">Добавить зону</button>
+    <button id="clear-zones">Очистить зоны</button>
+    <br>
+    <label for="zone-color">Выберите цвет для зоны:</label>
+    <input type="color" id="zone-color" value="#0000ff">
+    <br>
+    <label for="zone-opacity">Выберите прозрачность для зоны:</label>
+    <input type="range" id="zone-opacity" min="0" max="1" step="0.05" value="0.7">
+    <br>
+    <label for="zone-text">Текст для зоны:</label>
+    <textarea id="zone-text" placeholder="Введите текст для зоны"></textarea>
+    <br>
+    <div id="map-container">
+        <img id="map" src="od.png" alt="Карта Одессы">
+        <canvas id="zones"></canvas>
+    </div>
+
+    <script>
+        const img = document.getElementById('map');
+        const canvas = document.getElementById('zones');
+        const ctx = canvas.getContext('2d');
+        const addZoneBtn = document.getElementById('add-zone');
+        const clearZonesBtn = document.getElementById('clear-zones');
+        const colorPicker = document.getElementById('zone-color');
+        const opacitySlider = document.getElementById('zone-opacity');
+        const textInput = document.getElementById('zone-text');
+        let drawing = false;
+        let currentZone = [];
+        // let zones = JSON.parse(localStorage.getItem('zones')) || [];
+        let hoveredZoneIndex = -1;
+        let selectedColor = colorPicker.value;  // Изначально выбранный цвет
+        let selectedOpacity = opacitySlider.value; // Изначально выбранная прозрачность
+        let hoverText = "";  // Текст, который будет отображаться при наведении
+        let zones = [
+            {
+                "points": [
+                    [
+                        815,
+                        1210.5
+                    ],
+                    [
+                        817,
+                        1192.5
+                    ],
+                    [
+                        811,
+                        1179.5
+                    ],
+                    [
+                        835,
+                        1132.5
+                    ],
+                    [
+                        834,
+                        1098.5
+                    ],
+                    [
+                        831,
+                        1035.5
+                    ],
+                    [
+                        819,
+                        1020.5
+                    ],
+                    [
+                        818,
+                        983.5
+                    ],
+                    [
+                        799,
+                        966.5
+                    ],
+                    [
+                        667,
+                        1030.5
+                    ],
+                    [
+                        644,
+                        1161.5
+                    ],
+                    [
+                        744,
+                        1244.5
+                    ],
+                    [
+                        758,
+                        1297.5
+                    ],
+                    [
+                        780,
+                        1304.5
+                    ],
+                    [
+                        786,
+                        1261.5
+                    ],
+                    [
+                        786,
+                        1261.5
+                    ]
+                ],
+                "color": "#5cf769",
+                "opacity": "0.4",
+                "text": "Аркадія(90грн)"
+            },
+            {
+                "points": [
+                    [
+                        667,
+                        1030
+                    ],
+                    [
+                        645,
+                        999
+                    ],
+                    [
+                        549,
+                        1004
+                    ],
+                    [
+                        441,
+                        986
+                    ],
+                    [
+                        452,
+                        1085
+                    ],
+                    [
+                        508,
+                        1174
+                    ],
+                    [
+                        582,
+                        1221
+                    ],
+                    [
+                        563,
+                        1314
+                    ],
+                    [
+                        647,
+                        1299
+                    ],
+                    [
+                        661,
+                        1349
+                    ],
+                    [
+                        763,
+                        1340
+                    ],
+                    [
+                        779,
+                        1307
+                    ],
+                    [
+                        757,
+                        1299
+                    ],
+                    [
+                        744,
+                        1248
+                    ],
+                    [
+                        642,
+                        1162
+                    ],
+                    [
+                        642,
+                        1162
+                    ]
+                ],
+                "color": "#108a00",
+                "opacity": "0.45",
+                "text": "Аркадія(150грн)"
+            },
+            {
+                "points": [
+                    [
+                        439,
+                        987
+                    ],
+                    [
+                        382,
+                        1025
+                    ],
+                    [
+                        314,
+                        1026
+                    ],
+                    [
+                        188,
+                        1081
+                    ],
+                    [
+                        225,
+                        1332
+                    ],
+                    [
+                        247,
+                        1379
+                    ],
+                    [
+                        278,
+                        1421
+                    ],
+                    [
+                        334,
+                        1408
+                    ],
+                    [
+                        344,
+                        1420
+                    ],
+                    [
+                        381,
+                        1733
+                    ],
+                    [
+                        371,
+                        1766
+                    ],
+                    [
+                        352,
+                        1768
+                    ],
+                    [
+                        357,
+                        1800
+                    ],
+                    [
+                        385,
+                        1827
+                    ],
+                    [
+                        426,
+                        1852
+                    ],
+                    [
+                        565,
+                        1648
+                    ],
+                    [
+                        720,
+                        1507
+                    ],
+                    [
+                        746,
+                        1514
+                    ],
+                    [
+                        753,
+                        1492
+                    ],
+                    [
+                        742,
+                        1467
+                    ],
+                    [
+                        762,
+                        1343
+                    ],
+                    [
+                        661,
+                        1351
+                    ],
+                    [
+                        648,
+                        1303
+                    ],
+                    [
+                        562,
+                        1316
+                    ],
+                    [
+                        581,
+                        1223.5
+                    ],
+                    [
+                        507,
+                        1177.5
+                    ],
+                    [
+                        451,
+                        1088.5
+                    ],
+                    [
+                        451,
+                        1088.5
+                    ]
+                ],
+                "color": "#377d3d",
+                "opacity": "0.7",
+                "text": "Аркадія(220грн)"
+            },
+            {
+                "points": [
+                    [
+                        440,
+                        986
+                    ],
+                    [
+                        478,
+                        965
+                    ],
+                    [
+                        548,
+                        964
+                    ],
+                    [
+                        542,
+                        879
+                    ],
+                    [
+                        549,
+                        862
+                    ],
+                    [
+                        554,
+                        803
+                    ],
+                    [
+                        578,
+                        768
+                    ],
+                    [
+                        599,
+                        735
+                    ],
+                    [
+                        683,
+                        724
+                    ],
+                    [
+                        756,
+                        778
+                    ],
+                    [
+                        790,
+                        748
+                    ],
+                    [
+                        818,
+                        795
+                    ],
+                    [
+                        801,
+                        813
+                    ],
+                    [
+                        813,
+                        873
+                    ],
+                    [
+                        798,
+                        959
+                    ],
+                    [
+                        668,
+                        1028
+                    ],
+                    [
+                        645,
+                        996
+                    ],
+                    [
+                        549,
+                        1001
+                    ],
+                    [
+                        450,
+                        986
+                    ],
+                    [
+                        450,
+                        986
+                    ]
+                ],
+                "color": "#ff0000",
+                "opacity": "0.4",
+                "text": "Дерибасівська(90грн)"
+            },
+            {
+                "points": [
+                    [
+                        315,
+                        1025
+                    ],
+                    [
+                        312,
+                        906
+                    ],
+                    [
+                        292,
+                        882
+                    ],
+                    [
+                        335,
+                        759
+                    ],
+                    [
+                        388,
+                        618.5
+                    ],
+                    [
+                        443,
+                        546
+                    ],
+                    [
+                        579,
+                        422
+                    ],
+                    [
+                        737,
+                        450
+                    ],
+                    [
+                        698,
+                        514
+                    ],
+                    [
+                        669,
+                        622
+                    ],
+                    [
+                        682,
+                        645
+                    ],
+                    [
+                        683,
+                        722
+                    ],
+                    [
+                        599,
+                        733
+                    ],
+                    [
+                        554,
+                        802
+                    ],
+                    [
+                        548,
+                        862
+                    ],
+                    [
+                        541,
+                        879
+                    ],
+                    [
+                        547,
+                        961
+                    ],
+                    [
+                        477,
+                        962
+                    ],
+                    [
+                        384,
+                        1022
+                    ],
+                    [
+                        384,
+                        1022
+                    ]
+                ],
+                "color": "#ba2d2d",
+                "opacity": "0.7",
+                "text": "Дерибасівська(150грн)"
+            },
+            {
+                "points": [
+                    [
+                        314,
+                        1025.5
+                    ],
+                    [
+                        188,
+                        1080.5
+                    ],
+                    [
+                        129,
+                        660
+                    ],
+                    [
+                        137,
+                        632
+                    ],
+                    [
+                        280,
+                        491
+                    ],
+                    [
+                        321,
+                        483
+                    ],
+                    [
+                        358,
+                        455
+                    ],
+                    [
+                        422,
+                        450
+                    ],
+                    [
+                        530,
+                        343.5
+                    ],
+                    [
+                        664,
+                        363
+                    ],
+                    [
+                        769,
+                        308
+                    ],
+                    [
+                        781,
+                        293
+                    ],
+                    [
+                        776,
+                        249
+                    ],
+                    [
+                        820,
+                        178
+                    ],
+                    [
+                        917,
+                        68
+                    ],
+                    [
+                        979,
+                        66
+                    ],
+                    [
+                        989,
+                        95
+                    ],
+                    [
+                        1020,
+                        120
+                    ],
+                    [
+                        1027,
+                        155
+                    ],
+                    [
+                        1026,
+                        257
+                    ],
+                    [
+                        982,
+                        350
+                    ],
+                    [
+                        868,
+                        368
+                    ],
+                    [
+                        788,
+                        402
+                    ],
+                    [
+                        737,
+                        450
+                    ],
+                    [
+                        578,
+                        422
+                    ],
+                    [
+                        441,
+                        545
+                    ],
+                    [
+                        387,
+                        616
+                    ],
+                    [
+                        290,
+                        881.5
+                    ],
+                    [
+                        312,
+                        909.5
+                    ],
+                    [
+                        312,
+                        909.5
+                    ]
+                ],
+                "color": "#9c1414",
+                "opacity": "0.7",
+                "text": "Дерибасівська(220грн)"
+            }
+        ]
+        img.onload = function () {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            drawZones();
+        };
+
+        function drawZones() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);  // Очищаем холст
+            zones.forEach((zone, index) => {
+                const zoneColor = zone.color || '#0000ff';  // Цвет зоны
+                let zoneOpacity = zone.opacity || 0.7;  // Прозрачность зоны, по умолчанию 0.7
+
+                // Если зона наведена, уменьшаем её прозрачность
+                if (index === hoveredZoneIndex) {
+                    zoneOpacity = Math.max(zoneOpacity - 0.2, 0.4);  // Прозрачность чуть ниже при наведении
+                }
+
+                ctx.beginPath();
+                ctx.moveTo(zone.points[0][0], zone.points[0][1]);
+                for (let i = 1; i < zone.points.length; i++) {
+                    ctx.lineTo(zone.points[i][0], zone.points[i][1]);
+                }
+                ctx.closePath();
+                // Используем правильный формат rgba с прозрачностью
+                ctx.fillStyle = `${zoneColor}${Math.round(zoneOpacity * 255).toString(16).padStart(2, '0')}`;
+                ctx.fill();
+                ctx.strokeStyle = 'blue';
+                ctx.stroke();
+
+                // Если это зона, на которую наведена мышь, подсвечиваем её
+                if (index === hoveredZoneIndex) {
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = 'red';
+                    ctx.stroke();
+                    drawTextInZone(zone.points, zone.text);  // Отображаем текст в центре зоны
+                }
+            });
+            drawCurrentZone();
+        }
+
+        function drawCurrentZone() {
+            if (currentZone.length > 0) {
+                ctx.beginPath();
+                ctx.moveTo(currentZone[0][0], currentZone[0][1]);
+                for (let i = 1; i < currentZone.length; i++) {
+                    ctx.lineTo(currentZone[i][0], currentZone[i][1]);
+                }
+                ctx.strokeStyle = 'red';
+                ctx.stroke();
+                currentZone.forEach(point => {
+                    ctx.beginPath();
+                    ctx.arc(point[0], point[1], 5, 0, Math.PI * 2);
+                    ctx.fillStyle = 'red';
+                    ctx.fill();
+                });
+            }
+        }
+
+        // Рисуем текст в центре зоны с переносом строк
+        function drawTextInZone(points, text) {
+            if (!text) return;
+
+            // Находим центр многоугольника (центр зоны)
+            const center = getCenterOfPolygon(points);
+
+            ctx.font = "16px Arial";
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center'; // Текст выравнивается по центру по горизонтали
+            ctx.textBaseline = 'middle'; // Текст выравнивается по центру по вертикали
+
+            // Разбиваем текст на строки по символу новой строки
+            const lines = text.split('\n');
+            const lineHeight = 20;  // Высота строки
+            let y = center.y - (lines.length * lineHeight) / 2; // Начальная позиция по Y для центровки
+
+            // Отображаем каждую строку
+            lines.forEach((line, index) => {
+                ctx.fillText(line, center.x, y + index * lineHeight); // Отображаем строку текста
+            });
+        }
+
+
+        // Находим центр многоугольника (для текста)
+        function getCenterOfPolygon(points) {
+            let x = 0, y = 0;
+            let n = points.length;
+            for (let i = 0; i < n; i++) {
+                x += points[i][0];
+                y += points[i][1];
+            }
+            return { x: x / n, y: y / n };
+        }
+
+        canvas.addEventListener('click', function (event) {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            if (drawing) {
+                currentZone.push([x, y]);
+                drawZones();
+            }
+        });
+
+        addZoneBtn.addEventListener('click', function () {
+            if (!drawing) {
+                currentZone = [];
+                drawing = true;
+                alert('Кликните, чтобы задать точки зоны. Двойной клик завершает зону.');
+            }
+        });
+
+        canvas.addEventListener('dblclick', function () {
+            if (drawing && currentZone.length > 2) {
+                const zoneText = textInput.value || `Зона ${zones.length + 1}`;  // Текст по умолчанию
+                // Добавляем выбранный цвет и прозрачность для новой зоны
+                zones.push({
+                    points: [...currentZone],
+                    color: selectedColor,
+                    opacity: selectedOpacity,
+                    text: zoneText
+                });
+                localStorage.setItem('zones', JSON.stringify(zones)); // Сохраняем в localStorage
+                drawing = false;
+                currentZone = [];
+                drawZones();
+            }
+        });
+
+        clearZonesBtn.addEventListener('click', function () {
+            zones = [];
+            localStorage.removeItem('zones');
+            drawZones();
+        });
+
+        // Обработчик изменения цвета через input
+        colorPicker.addEventListener('input', function () {
+            selectedColor = colorPicker.value;  // Обновляем выбранный цвет
+        });
+
+        // Обработчик изменения прозрачности через input
+        opacitySlider.addEventListener('input', function () {
+            selectedOpacity = opacitySlider.value;  // Обновляем выбранную прозрачность
+        });
+
+        // Проверяем, наведена ли мышь на зону
+        canvas.addEventListener('mousemove', function (event) {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            hoveredZoneIndex = zones.findIndex(zone => isPointInPolygon([x, y], zone.points));
+            drawZones();
+        });
+
+        function isPointInPolygon(point, polygon) {
+            let [x, y] = point;
+            let inside = false;
+            for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+                let xi = polygon[i][0], yi = polygon[i][1];
+                let xj = polygon[j][0], yj = polygon[j][1];
+                let intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+    </script>
+</body>
+
+</html>
